@@ -70,7 +70,15 @@ class RemoteFileSystem(luigi.target.FileSystem):
         Return False if the file's modified time is older mtime.
         """
         self._connect()
-        files = self.ftpcon.nlst(path)
+        try:
+            files = self.ftpcon.nlst(path)
+        except ftplib.error_perm, e:
+            # On at least some servers a listing of a non-existent path results
+            # in a permission error.
+            if '550' in e.message:
+                files = []
+            else:
+                raise(e)
 
         result = False
         if files:
